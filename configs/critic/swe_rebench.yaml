@@ -1,0 +1,8 @@
+# opera critic for SWE-rebench (the Harbor Hub swe-rebench-leaderboard corpus, 860 Python tasks) — the same policy
+# as SWE-bench Pro so the two benchmarks are comparable: OpenHands SDK harness, no turn cap, the bare protocol.
+#   .venv/bin/python src/launch.py swe-rebench --harness openhands --agent-model qwen35-9b --selection repos --critic-model gpt-5.6
+extends: base.yaml
+strategy: operator
+endpoint: gpt-5.6                            # --critic-model overrides (self-critic: pass the agent's own preset)
+contract: null                               # the bare protocol (harnesses/<pack>/operator.md): a bug report + hidden tests
+max_turns: null                              # no turn cap; the task's 3000 s (4 tasks 6000 s) wall clock is the budget

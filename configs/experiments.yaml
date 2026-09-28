@@ -1,0 +1,74 @@
+# Experiment protocol for the paper runs — NON-secret, checked in. Launch scripts (experiments/) read this file and
+# turn it into src/launch.py invocations; endpoints and keys come from .env (see .env.example), never from here.
+# Names refer to: agent presets = configs/agent-models.yaml, critic presets = configs/critic-models.yaml,
+# harness / selection = src/launch.py BENCHMARKS, policy keys = the critic policy files under configs/critic/
+# (passed as --critic-policy key.path=value together with --critic-tag).
+
+defaults:
+  max_workers: 12                     # concurrent trials per launch (--max-workers); every benchmark uses it unless overridden
+  pass_at_k: 1                        # attempts per task (--pass-at-k); the launch scripts may raise it per study
+
+benchmarks:
+  tb21:                               # Terminal-Bench 2.1 (src/launch.py tb21)
+    harness: terminus-2               # --harness; the only harness tb21 runs under
+    selection: green                  # --selection (88 tasks; full = 89, smoke = 3)
+    max_workers: 12
+    max_turns: null                   # --max-turns: none — each task's own wall clock is the only budget
+    critic_config: configs/critic/terminal_bench_2_1.yaml   # the benchmark's critic policy file (resolved by src/launch.py)
+  swebench-pro:                       # SWE-bench Pro (src/launch.py swebench-pro)
+    harness: openhands                # --harness (mini-swe-agent is the alternative; the paper runs use OpenHands)
+    selection: subset-100             # --selection: the fixed 100-task evaluation subset
+    max_workers: 12
+    max_turns: 150                    # --max-turns: OpenHands iteration cap for this benchmark
+    critic_config: configs/critic/swebench_pro.yaml
+  deepswe:                            # DeepSWE (src/launch.py deepswe; pier environment)
+    harness: mini-swe-agent           # --harness: the paper's DeepSWE runs use mini-swe-agent (openhands is the alternative)
+    extra_flags: ["--reasoning-passback"]   # the policy sees its own earlier reasoning (the default since 2026-09-23; kept explicit)
+    selection: null                   # deepswe takes no --selection (the whole 113-task shard is the only one)
+    max_workers: 12
+    max_turns: null                   # --max-turns: none
+    critic_config: configs/critic/deepswe.yaml
+
+# The Opera critic policy used by the current protocol (identical on every benchmark). Each entry becomes one
+# --critic-policy key.path=value; `tag` becomes --critic-tag so the job id names the variant.
+critic_policy:
+  tag: novelty05                      # --critic-tag: the job-id label of this policy variant
+  overrides:
+    operators: swe_repair                        # the operator set (src/critics/models.py OPERATOR_SETS key)
+    applicability.readiness_max_novelty: 0.5     # a readiness review only fires while the trajectory's novelty is <= 0.5
+    schedule.idle_max_novelty: 0.5               # an idle-triggered review only fires while novelty is <= 0.5
+
+# Agent presets and the reasoning effort each runs at, per benchmark (--agent-model / --reasoning-effort).
+# `default` = do not pass --reasoning-effort (the preset's own default applies; for qwen35-9b the field is not sent at all).
+agents:
+  qwen35-9b:
+    reasoning_effort: {tb21: default, swebench-pro: default, deepswe: default}
+  muse-glimmer-30b:
+    reasoning_effort: {tb21: high, swebench-pro: high, deepswe: high}
+  qwen38-27b:
+    reasoning_effort: {tb21: xhigh, swebench-pro: medium, deepswe: xhigh}   # medium on Pro: xhigh timed out 12 % of attempts
+  deepseek-v4-flash:
+    reasoning_effort: {tb21: max, swebench-pro: high, deepswe: max}         # DeepSeek takes low | high | max only
+
+# Critic presets and efforts (--critic-model / --critic-reasoning-effort). `self` means the critic is the agent's own
+# preset at the agent's effort for that benchmark (the self-critic arm): pass the agent preset as --critic-model.
+critics:
+  gpt-5.6:
+    reasoning_effort: high            # the relay's Responses API; preset default is xhigh, the protocol runs high
+  claude-opus-4-8:
+    reasoning_effort: high            # preset default; xhigh loses reviews to the relay's edge timeout
+  self:
+    model: agent                      # resolved per run: the agent preset name
+    reasoning_effort: agent           # resolved per run: the agent's effort for the benchmark (agents.<preset>.reasoning_effort)
+
+# Ablations: each is the critic_policy above with these overrides replaced/added and its own --critic-tag.
+ablations:
+  edit-only:                          # the critic may only recommend edit-stage operators
+    tag: novelty05-edit
+    overrides: {operators: swe_repair_edit}
+  non-edit:                           # the critic may only recommend non-edit (investigation / verification) operators
+    tag: novelty05-noedit
+    overrides: {operators: swe_repair_noedit}
+  no-audit:                           # the intervention audit (stage-2 review of a delivered suggestion) is switched off
+    tag: novelty05-noaudit
+    overrides: {applicability.intervention_audit: false}

@@ -1,0 +1,23 @@
+# Terminal-Bench 2.1, the leaderboard protocol (green set × 5 attempts): Qwen3.8-27B at medium under Terminus 2, reviewed
+# by the gpt-5.6 operator critic with the completion gate (+ its stage-2 review — a teacher critic).
+#   .venv/bin/python src/launch.py --spec configs/runs/tb21-qwen38-critic-gpt56.yaml --max-workers 24
+#   -> results/tb21/green/terminus-2-qwen38-27b-gpt-5.6-operator-cgate/
+# Wall clock: each task's own [agent] timeout_sec, enforced by harbor (nothing to set here).
+agent:
+  harness: terminus-2
+  model: qwen38-27b                 # configs/agent-models.yaml
+  reasoning_effort: medium           # recorded in protocol.json, never in the job id
+  condenser: none                   # Terminus 2 summarizes on its own
+critic:
+  enabled: true
+  model: gpt-5.6                    # configs/critic-models.yaml (the Responses API: the critic's reasoning summaries are recorded)
+  strategy: operator                # configs/strategies/operator.yaml; the policy = configs/critic/terminal_bench_2_1.yaml
+  # policy: {schedule: {cadence: {interval: 3}}}   # overrides of the policy file; then give the variant a name:
+  # tag: dense
+benchmark:
+  name: tb21
+  selection: green                  # 88 tasks (full = 89, smoke = 3)
+  pass_at_k: 5                      # attempts wanted per task; a relaunch runs only what is still missing
+run:
+  mode: resume                      # resume | resume-timeout | refresh (what to do with the existing directory)
+  max_workers: 24

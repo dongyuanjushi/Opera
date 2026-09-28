@@ -1,0 +1,12 @@
+# Strategy `llm_verifier` — LLM-as-verifier: one fine-grained 1-20 score of the candidate solution, taken as the
+# expectation over the score token's log-prob distribution (vLLM critics; the relay's Responses API exposes none, so
+# the stated integer is used there). Outcome verification: by default it runs only at the readiness events
+# (completion / idle; score_on: all scores every review point) and a score below min_score delivers the verifier's
+# own "MISSING" line as prose through the carrier operator. No audit, no confidence gate (the score is the
+# confidence). src/critics/strategies/llm_verifier.py
+strategy: llm_verifier
+# operators: come from the harness pack (critics/harnesses/<harness>/policy.yaml) — a strategy is harness-agnostic;
+#            its carrier_operator falls back to the pack's default_carrier when the set lacks it
+strategy_options: {min_score: 14, score_on: readiness, score_from: logprobs, top_logprobs: 20, min_mass: 0.5,
+                   carrier_operator: requirement_contract_review}
+applicability: {intervention_audit: false, dedup_window_turns: 6}

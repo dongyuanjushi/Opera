@@ -1,0 +1,17 @@
+# Terminal-Bench 2.1, the leaderboard protocol (green set × 5 attempts): Qwen3.8-27B at medium under Terminus 2, no critic.
+#   .venv/bin/python src/launch.py --spec configs/runs/tb21-qwen38-baseline.yaml --max-workers 24
+#   -> results/tb21/green/terminus-2-qwen38-27b-nocritic/
+agent:
+  harness: terminus-2
+  model: qwen38-27b
+  reasoning_effort: medium
+  condenser: none
+critic:
+  enabled: false
+benchmark:
+  name: tb21
+  selection: green
+  pass_at_k: 5
+run:
+  mode: resume
+  max_workers: 24

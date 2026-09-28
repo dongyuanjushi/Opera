@@ -1,0 +1,16 @@
+# opera critic for Terminal-Bench 2.1 — harbor's Terminus 2 through the proxy (src/launch.py tb21 --critic-model …).
+#   .venv/bin/python src/launch.py tb21 --agent-model ornith15-35b-a3b --selection smoke --critic-model gpt-5.6 [--critic-strategy swe_prm]
+# Contract (prompts/contracts/terminal_bench.md): a terminal task graded by hidden checks on the FINAL container state; the
+# agent answers in Terminus-2 JSON batches (the transcript layer reads the commands as its actions) and finishes with
+# task_complete twice — the confirmation request is the readiness check's `completion` event. The budget is the task's
+# WALL CLOCK; the scaffold reports a per-request turn estimate (X-Critic-Max-Turns) for the record only: the critic
+# never sees it (budget_context off) and max_turns stays unset.
+extends: base.yaml
+strategy: operator                         # --critic-strategy swe_prm | swe_search | consistency_gate | consensus_checkpoint | clarify_gate | passthrough
+endpoint: gpt-5.6
+contract: terminal_bench
+# The terminus2 harness pack (src/critics/harnesses/terminus2/: shared operators, policy.yaml with the shared
+# readiness checks / triggers / cadence, operator.md + intervention_audit.md) supplies every policy default; only
+# benchmark-level keys live here. --critic-strategy swaps the decision layer, the pack's operators stay.
+harness: terminus2
+# Reviews are synchronous (2026-09-16): the note is injected into the request that was reviewed.

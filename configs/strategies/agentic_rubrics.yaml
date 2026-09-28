@@ -1,0 +1,11 @@
+# Strategy `agentic_rubrics` — Agentic Rubrics: a context-grounded rubric checklist written once per task (at the
+# first review point, from the task and the repository context the policy has explored so far — the critic cannot
+# explore the container itself), then execution-free per-item scoring of the candidate at the readiness events
+# (completion / idle; score_on: all scores every review point). A failed required item, or a satisfied fraction below
+# min_pass, delivers the failed items as prose through the carrier operator. No audit, no confidence gate.
+# src/critics/strategies/agentic_rubrics.py
+strategy: agentic_rubrics
+# operators: come from the harness pack (critics/harnesses/<harness>/policy.yaml) — a strategy is harness-agnostic;
+#            its carrier_operator falls back to the pack's default_carrier when the set lacks it
+strategy_options: {rubric_items: 8, min_pass: 1.0, score_on: readiness, carrier_operator: requirement_contract_review}
+applicability: {intervention_audit: false, dedup_window_turns: 6}

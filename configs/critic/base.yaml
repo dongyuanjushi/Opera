@@ -1,0 +1,16 @@
+# Shared critic policy every benchmark file inherits (`extends: base.yaml`): the intervention SCHEDULE and
+# the DELIVERY knobs, which every strategy shares. Strategy-specific knobs
+# (operator set, applicability gates, findings) live in configs/strategies/<strategy>.yaml and are merged
+# underneath; the critic model comes from configs/critic-models.yaml.
+# Values: the harness pack's policy.yaml (events first, then a fixed interval; one accept/reject audit; two deliveries
+# per finding). Semantics: src/critics/schedule.py (when), findings.py (the open finding), context.py (injection).
+strategy: operator
+# schedule / delivery / max_turns defaults come from the harness pack (src/critics/harnesses/<harness>/policy.yaml,
+# default `harness: swe`) — one isolated workspace per agent harness; a benchmark file overrides any of them.
+log_dir: tmp/critic-logs
+# What each review event in critic-logs/<trial>/decisions.jsonl keeps of the critic model's OWN output:
+#   reasoning: the model's reasoning channel (reasoning_content of a thinking critic — Qwen/Ornith on vLLM; None when the
+#              API exposes none), the raw reply the decision was parsed from, finish reason, usage, model -> event "critic"
+#   prompts:   the exact review messages the critic saw -> event "prompt" (large: a bounded transcript per review;
+#              turn on for a training-set run: `--critic-record-prompts` on the launchers / `--record-prompts` on the proxy)
+record: {reasoning: true, prompts: false}

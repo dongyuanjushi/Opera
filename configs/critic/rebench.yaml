@@ -1,0 +1,12 @@
+# opera critic for SWE-rebench (v1 / v1-leaderboard / v2 harbor tasks).
+#   src/launch_rebench.py --version v2 --agent plugins.mini_swe_scaffold:CriticMiniSweAgent --model openai/Qwen3.6-27B \
+#       --agent-env OPENAI_BASE_URL=$VLLM_BASE_URL --agent-env OPENAI_API_KEY=dummy \
+#       --critic configs/critic/rebench.yaml [--critic-model gpt-5.6]
+# Contract differences from DeepSWE: the task is a bug report with hidden FAIL_TO_PASS tests and the
+# submission is the WORKING TREE diff (harbor's model.patch) — no commit is needed, so a submission direction
+# asks for a final verification, not a commit.
+extends: base.yaml
+strategy: operator
+endpoint: gpt-5.6
+contract: null                               # the bare protocol (harnesses/swe/operator.md): a bug report + hidden tests, nothing benchmark-specific yet
+max_turns: 200
