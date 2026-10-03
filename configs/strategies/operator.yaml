@@ -1,12 +1,3 @@
-# Strategy `operator` — this repository's operator critic (the shared `swe_repair` taxonomy):
-# a frozen, prompted critic that returns ONE bounded, taxonomy-typed suggestion (models.OPERATOR_SETS)
-# per review, gated by applicability (leakage → dedup → accept/reject audit) and
-# tracked as one open finding (open / closed). These are the strategy's own knobs;
-# a benchmark file (configs/critic/<bench>.yaml) may override any of them, base.yaml holds the shared
-# schedule / delivery, critic-models.yaml the model. Selected by `strategy: operator` (the default).
-# Prompt: harnesses/<harness>/operator.md (the shared review protocol) with the benchmark's contract in its {{TASK_CONTRACT}} slot.
+# Strategy `operator` — Opera's operator critic: one operator-typed, audited suggestion per review, tracked as one open
+# finding. Its schedule, gates and delivery defaults come from the harness pack (src/critics/harnesses/<pack>/policy.yaml).
 strategy: operator
-# operators: come from the harness pack (critics/harnesses/<harness>/policy.yaml) — a strategy is harness-agnostic;
-#            its carrier_operator falls back to the pack's default_carrier when the set lacks it
-# applicability / findings: the harness pack's policy (critics/harnesses/<harness>/policy.yaml) tunes the operator critic
-#            per harness; the published baselines keep their own paper-faithful values in their strategy files

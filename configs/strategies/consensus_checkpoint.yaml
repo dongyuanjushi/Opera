@@ -1,9 +1,9 @@
-# Strategy `consensus_checkpoint` — edit-commit checkpointing against coherence collapse (arXiv:2603.24631):
-# a per-conversation ledger of the tracked diffs; once two distinct diffs exist, one call asks whether the current
-# diff regressed against the previous checkpoint. Detection only — the finding tells the agent what to restore.
-# src/critics/strategies/consensus_checkpoint.py
+# Strategy `consensus_checkpoint` — regression detection (arXiv:2603.24631): asks whether the current diff lost something
+# the previous diff checkpoint had; detection only, nothing is restored.
 strategy: consensus_checkpoint
-# operators: come from the harness pack (critics/harnesses/<harness>/policy.yaml) — a strategy is harness-agnostic;
-#            its carrier_operator falls back to the pack's default_carrier when the set lacks it
-strategy_options: {max_checkpoints: 8, carrier_operator: diff_scope_review}
-applicability: {intervention_audit: false, dedup_window_turns: 6}
+strategy_options:
+  max_checkpoints: 8                       # diff checkpoints remembered per conversation
+  carrier_operator: diff_scope_review      # operator label the feedback is delivered under
+applicability:
+  intervention_audit: false                # second accept/reject call on every suggestion before delivery
+  dedup_window_turns: 6                    # an identical suggestion is not delivered again within this many turns

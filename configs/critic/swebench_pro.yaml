@@ -1,20 +1,7 @@
-# opera critic for SWE-bench Pro (the harbor golden-path tasks built by the xrlenv kit).
-#   .venv/bin/python src/launch.py swebench-pro --harness openhands --agent-model gpt-5.6 --selection smoke \
-#       --critic configs/critic/swebench_pro.yaml --critic-model gpt-5.6
-#
-# Contract (same shape as SWE-rebench, NOT DeepSWE): the instruction is a problem statement +
-# requirements + interface, the repository is checked out at /app, and the submission is the
-# WORKING TREE — tests/test.sh captures `git add -A && git diff --cached <base>` as model.patch
-# before grading. So a submission direction asks for a compiling, verified tree, never for a commit.
-# Hidden tests: FAIL_TO_PASS ∪ PASS_TO_PASS must all pass, so a fix that breaks an unrelated
-# passing test scores zero — the operator prompt's "do not break what already works" rule matters
-# more here than on DeepSWE.
+# Critic policy for SWE-bench Pro. Schedule, gates and delivery come from the harness pack
+# (src/critics/harnesses/<pack>/policy.yaml) and the strategy file; --critic-policy key=value overrides any key for one run.
 extends: base.yaml
-strategy: operator
-endpoint: gpt-5.6                            # --critic-model overrides (self-critic: pass the agent's own preset)
-contract: null                               # the bare protocol (harnesses/swe/operator.md): a bug report + hidden tests, nothing benchmark-specific yet
-max_turns: null                             # no turn cap by default (2026-09-05); the proxy URL channel carries a cap when --max-turns sets one
-
-# Every critic reviews asynchronously. The completion gate is mechanical only;
-# semantic completion checks use ordinary readiness reviews and the shared audit chain.
-# --critic-policy overrides win over the file.
+strategy: operator                         # critic strategy
+endpoint: gpt-5.6                          # default critic model preset; --critic-model overrides
+contract: null                             # no task contract: the bare protocol
+max_turns: null                            # agent turn budget the critic assumes (null = none)

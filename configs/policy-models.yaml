@@ -1,0 +1,124 @@
+# Policy (agent) model presets, selected with --agent-model / --policy-model. No endpoints or keys live here: a preset
+# names the environment variables to read (.env).
+#
+#   model                     id the endpoint serves
+#   kind                      vllm (self-hosted) | relay (model relay)
+#   api                       relay only: responses | chat
+#   base_url_env              env vars holding the base URL, first one set wins
+#   api_key_env               env vars holding the API key, first one set wins
+#   api_key_default           key used when none of api_key_env is set
+#   reasoning_effort          default effort; `none` = the field is not sent (the chat template's default applies)
+#   reasoning_effort_choices  efforts --reasoning-effort may pick
+#   reasoning_effort_field    where the effort travels: chat_template_kwargs | output_config (default: top-level field)
+#   reasoning_effort_key      name of the effort key inside chat_template_kwargs (default reasoning_effort)
+#   sampling                  sampling parameters sent with every call
+#   context_window            context size reported to the scaffold (default: the served window)
+#   interleaved_thinking      Terminus 2 keeps the model's reasoning in its history
+#   reasoning_reinject        OpenHands: put the model's earlier reasoning back into later requests (default true)
+#   reasoning_carryover       relay / Responses API: resend the encrypted reasoning items every turn
+#   thinking                  claude on chat completions: thinking mode (adaptive)
+#   thinking_carryover        claude: resend the signed thinking blocks every turn
+#   openhands_provider        LiteLLM provider prefix the OpenHands SDK uses for this model
+#   openhands_retry_malformed_calls   OpenHands: re-prompt up to N times when a reply carries no valid tool call
+presets:
+  qwen35-9b:
+    model: Qwen3.5-9B
+    kind: vllm
+    reasoning_reinject: false
+    base_url_env: [QWEN35_9B_BASE_URL, VLLM_BASE_URL]
+    api_key_env: [VLLM_API_KEY]
+    api_key_default: dummy
+    reasoning_effort: none
+  sft-critic:                    # a locally trained checkpoint (src/sft), served under the id sft-critic
+    model: sft-critic
+    kind: vllm
+    base_url_env: [SFT_CRITIC_BASE_URL, VLLM_BASE_URL]
+    api_key_env: [VLLM_API_KEY]
+    api_key_default: dummy
+    reasoning_effort: none
+  deepseek-v4-flash:
+    model: DeepSeek-V4-Flash-0731
+    kind: vllm
+    base_url_env: [DEEPSEEK_V4_FLASH_BASE_URL, VLLM_BASE_URL]
+    api_key_env: [VLLM_API_KEY]
+    api_key_default: dummy
+    reasoning_effort: max
+    sampling: {temperature: 1.0, top_p: 0.95}
+    openhands_retry_malformed_calls: 3
+    reasoning_effort_choices: [low, high, max]
+    reasoning_effort_field: chat_template_kwargs
+  muse-glimmer-30b:
+    model: muse-glimmer-30b
+    kind: vllm
+    base_url_env: [MUSE_GLIMMER_30B_BASE_URL, VLLM_BASE_URL]
+    api_key_env: [VLLM_API_KEY]
+    api_key_default: dummy
+    reasoning_effort: high
+    reasoning_effort_choices: [low, medium, high, xhigh]
+    reasoning_effort_field: chat_template_kwargs
+    reasoning_effort_key: reasoning_strength
+  qwen36-27b:
+    model: Qwen3.6-27B
+    kind: vllm
+    base_url_env: [QWEN36_27B_BASE_URL, VLLM_BASE_URL]
+    api_key_env: [VLLM_API_KEY]
+    api_key_default: dummy
+    reasoning_effort: none
+    sampling: {temperature: 1.0, top_p: 0.95, top_k: 20}
+  qwen38-27b:
+    model: Qwen3.8-27B
+    kind: vllm
+    base_url_env: [QWEN38_27B_BASE_URL, VLLM_BASE_URL]
+    api_key_env: [VLLM_API_KEY]
+    api_key_default: dummy
+    reasoning_effort: medium
+    reasoning_effort_choices: [low, medium, xhigh]
+    reasoning_effort_field: chat_template_kwargs
+    interleaved_thinking: true
+    sampling: {temperature: 1.0, top_p: 0.95, top_k: 20}
+  ornith15-35b-a3b:
+    model: Ornith-1.5-35b-a3b
+    kind: vllm
+    base_url_env: [ORNITH15_35B_A3B_BASE_URL, VLLM_BASE_URL]
+    api_key_env: [VLLM_API_KEY]
+    api_key_default: dummy
+    reasoning_effort: none
+    interleaved_thinking: true
+    sampling: {temperature: 1.0, top_p: 1.0}
+    context_window: 131072
+  claude-opus-4-8:
+    model: claude-opus-4-8
+    kind: relay
+    api: chat
+    base_url_env: [MODEL_RELAY_BASE_URL]
+    api_key_env: [MODEL_RELAY_API_KEY, RELAY_API_KEY]
+    thinking: adaptive
+    reasoning_effort_field: output_config
+    reasoning_effort: high
+    reasoning_effort_choices: [low, medium, high]
+    thinking_carryover: true
+  gpt-5.6:
+    model: gpt-5.6
+    kind: relay
+    api: responses
+    base_url_env: [MODEL_RELAY_BASE_URL]
+    api_key_env: [MODEL_RELAY_API_KEY, RELAY_API_KEY]
+    reasoning_effort: xhigh
+    reasoning_carryover: true
+  gpt-5.6-chat:                  # gpt-5.6 on chat completions instead of the Responses API (no reasoning carry-over)
+    model: gpt-5.6
+    kind: relay
+    api: chat
+    base_url_env: [MODEL_RELAY_BASE_URL]
+    api_key_env: [MODEL_RELAY_API_KEY, RELAY_API_KEY]
+    reasoning_effort: medium
+    reasoning_carryover: false
+    openhands_provider: hosted_vllm
+  gpt-5.5:
+    model: gpt-5.5
+    kind: relay
+    api: responses
+    base_url_env: [MODEL_RELAY_BASE_URL]
+    api_key_env: [MODEL_RELAY_API_KEY, RELAY_API_KEY]
+    reasoning_effort: xhigh
+    reasoning_carryover: true

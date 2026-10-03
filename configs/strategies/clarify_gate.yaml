@@ -1,8 +1,8 @@
-# Strategy `clarify_gate` — underspecification detection (arXiv:2603.26233), adapted: the paper asks a human; here
-# the detector's answer is routed to the agent as one bounded direction. Prefer consistency_gate as the primary
-# uncertainty arm. src/critics/strategies/clarify_gate.py
+# Strategy `clarify_gate` — underspecification detector (arXiv:2603.26233): an open task ambiguity is routed to the agent
+# as one direction (there is no user to ask).
 strategy: clarify_gate
-# operators: come from the harness pack (critics/harnesses/<harness>/policy.yaml) — a strategy is harness-agnostic;
-#            its carrier_operator falls back to the pack's default_carrier when the set lacks it
-strategy_options: {carrier_operator: requirement_contract_review}
-applicability: {intervention_audit: false, dedup_window_turns: 6}
+strategy_options:
+  carrier_operator: requirement_contract_review   # operator label the direction is delivered under
+applicability:
+  intervention_audit: false                # second accept/reject call on every suggestion before delivery
+  dedup_window_turns: 6                    # an identical suggestion is not delivered again within this many turns

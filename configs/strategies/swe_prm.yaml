@@ -1,10 +1,10 @@
-# Strategy `swe_prm` — SWE-PRM (arXiv:2509.02360): a taxonomy-guided process reward model judging a sliding window
-# of the k most recent steps every n steps (n = the shared cadence interval in base.yaml, 5, as in the paper).
-# The paper has no confidence gate and no second audit; TASK_STATUS "On track" = continue, otherwise the
-# OVERALL_GUIDANCE is delivered as prose through the carrier operator. feedback_mode reproduces the paper's ablation:
-# detailed (SWE-PRM_D, the winner) | simple (SWE-PRM_S) | prescriptive (SWE-PRM_DR). src/critics/strategies/swe_prm.py
+# Strategy `swe_prm` — SWE-PRM baseline (arXiv:2509.02360): a taxonomy-guided process reward model judging a sliding window
+# of recent steps; its guidance is delivered as prose.
 strategy: swe_prm
-# operators: come from the harness pack (critics/harnesses/<harness>/policy.yaml) — a strategy is harness-agnostic;
-#            its carrier_operator falls back to the pack's default_carrier when the set lacks it
-strategy_options: {feedback_mode: detailed, window_steps: 8, carrier_operator: requirement_contract_review}
-applicability: {intervention_audit: false, dedup_window_turns: 6}
+strategy_options:
+  feedback_mode: detailed                  # detailed (taxonomy) | simple (no taxonomy) | prescriptive (names the next action)
+  window_steps: 8                          # number of most recent agent steps shown to the critic
+  carrier_operator: requirement_contract_review   # operator label the prose guidance is delivered under
+applicability:
+  intervention_audit: false                # second accept/reject call on every suggestion before delivery
+  dedup_window_turns: 6                    # an identical suggestion is not delivered again within this many turns

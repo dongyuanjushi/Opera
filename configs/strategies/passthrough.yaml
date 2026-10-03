@@ -1,4 +1,2 @@
-# Strategy `passthrough` — the A/B control: the proxy forwards every request unmodified, no critic
-# calls, no critic logs. Use it to measure the proxy/transport itself, or as the "no critic" arm of a
-# study run through the same launcher (`--critic-strategy passthrough`; job id gets `-critic-passthrough`).
+# Strategy `passthrough` — no review: the proxy forwards every request unmodified (the no-critic control).
 strategy: passthrough

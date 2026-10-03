@@ -1,15 +1,8 @@
-# opera critic for DeepSWE (any scaffold via the proxy).
-#   .venv/bin/python src/launch.py deepswe --harness openhands --agent-model qwen36-27b --critic-model gpt-5.6 [--critic-strategy passthrough]
-# Three axes: strategy (configs/strategies/*.yaml, default operator), critic model (configs/critic-models.yaml preset,
-# default gpt-5.6) and this benchmark policy; the flags override the first two and the job id records all three.
-# Only COMMITTED work is graded: the task contract (prompts/contracts/deepswe.md) tells the critic that a submission
-# direction must spell out the commit (the container has no git identity).
+# Critic policy for DeepSWE. Schedule, gates and delivery come from the harness pack
+# (src/critics/harnesses/<pack>/policy.yaml) and the strategy file; --critic-policy key=value overrides any key for one run.
 extends: base.yaml
-strategy: operator                         # configs/strategies/operator.yaml; --critic-strategy overrides
-endpoint: gpt-5.6
-contract: deepswe                            # prompts/contracts/deepswe.md fills the strategy prompt's task-contract slot (committed work only)
-max_turns: 200
-# Reviews are synchronous (2026-09-16). Reviews every 10 turns instead of the pack's 5 (user decision 2026-09-04):
-# the interval reviews mostly restated the requirement contract; halving them lightens the proxy without touching
-# the event-driven reviews (completion / stuck / idle).
-schedule: {interval: 10}
+strategy: operator                         # critic strategy
+endpoint: gpt-5.6                          # default critic model preset; --critic-model overrides
+contract: deepswe                          # task contract appended to the critic prompt (only committed work is graded)
+max_turns: 200                             # agent turn budget the critic assumes
+schedule: {interval: 10}                   # review every 10 agent turns (the packs' default is 5)

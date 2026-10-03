@@ -1,71 +1,59 @@
-# Critic model presets — the *critic's* LLM, independent of the agent's model.
-# Env-only, like configs/agent-models.yaml: no URLs or keys in files. Endpoints/keys come from
-# your shell (~/.bashrc: MODEL_RELAY_BASE_URL + MODEL_RELAY_API_KEY for the relay; VLLM_BASE_URL or
-# QWEN*_BASE_URL for self-hosted vLLM).
+# Critic model presets, selected with --critic-model (or `endpoint: <preset>` in configs/critic/<bench>.yaml). No endpoints
+# or keys live here: a preset names the environment variables to read (.env). A self-critic run uses the policy's own
+# preset name and shares its endpoint.
 #
-# Select a preset with
-#   endpoint: gpt-5.6                                   # in a critic config (configs/critic/*.yaml)
-#   endpoint: {preset: gpt-5.6, reasoning_effort: high} # preset + EndpointConfig overrides
-#   --critic-model gpt-5.6                              # critics.proxy / src/launch.py / rebench run_sweep.py
-# Resolution (src/critics/config.py: endpoint_from_preset): base_url = first exported var of base_url_env
-# ("/v1" appended unless present; append_v1: false to keep it verbatim); the key = first exported var of
-# api_key_env (stored by NAME, read at call time) or api_key_default. Any other EndpointConfig field
-# (token_field, temperature, reasoning_effort, max_tokens, timeout_s, retries, auth, extra_body,
-# response_format, disable_thinking_kwargs, api, reasoning_summary) passes through.
-# reasoning_effort per preset: a value (gpt-5.6: xhigh; qwen38-27b: medium since 2026-09-05, with reasoning_effort_choices
-# medium | xhigh — Qwen3.8's chat template also accepts `low`, but a critic is never run at it (user rule
-# 2026-08-30) — so --critic-reasoning-effort may pick the other one and the job id carries it:
-# -critic-operator-qwen38-27b-medium), `none` (the field is NOT sent — the
-# model's own template default applies, i.e. thinking stays on for Qwen3.6 / Ornith) or `required` (no default:
-# the run must choose). A literal "none" is never sent: vLLM would turn it into enable_thinking=false.
-# Lookup: $OPERA_CRITIC_MODELS, else this file next to / above the config, else opera/configs.
+#   model                     id the endpoint serves
+#   base_url_env              env vars holding the base URL, first one set wins ("/v1" appended when missing)
+#   api_key_env               env vars holding the API key, first one set wins
+#   api_key_default           key used when none of api_key_env is set
+#   api                       responses | chat (default chat)
+#   reasoning_effort          default effort; `none` = the field is not sent (the chat template's default applies)
+#   reasoning_effort_choices  efforts --critic-reasoning-effort may pick
+#   reasoning_effort_field    where the effort travels: chat_template_kwargs (default: top-level field)
+#   reasoning_summary         Responses API: ask for the reasoning summary (auto | concise | detailed)
+#   temperature               sampling temperature (null = not sent)
+#   max_tokens                output cap of one review (reasoning + decision)
+#   token_field               request field carrying the cap (max_tokens | max_completion_tokens)
+#   max_input_tokens          review-transcript budget; `auto` = the served window minus max_tokens
+#   chars_per_token           chars-per-token estimate used to bound the transcript
+#   timeout_s / retries       per-call timeout in seconds / attempts per review
+#   response_format           send the decision's strict JSON schema as response_format
+#   always_thinking           never retry a review with thinking disabled
+#   extra_body                extra fields merged into every request body
 presets:
-  # Relay critics run on the Responses API only (user decision 2026-09-02): the only API where gpt-5.x expose their
-  # reasoning — as a summary item, recorded into decisions.jsonl "critic.reasoning" (training data).
-  gpt-5.6:                                   # relay /v1/responses (served on gw since 2026-08-27; validated as a critic 2026-08-27)
+  gpt-5.6:
     model: gpt-5.6
     base_url_env: [MODEL_RELAY_BASE_URL]
     api_key_env: [MODEL_RELAY_API_KEY, RELAY_API_KEY]
     api: responses
-    reasoning_summary: detailed              # auto | concise | detailed — OpenAI writes a summary only when the model reasoned enough:
-    temperature: null                        # on a real review, medium (≈26 reasoning tokens) gave none, high (≈40+) gave one (2026-08-27)
-    reasoning_effort: xhigh                  # --critic-reasoning-effort medium to trade summaries for speed
-    max_tokens: 16384                        # max_output_tokens covers reasoning + answer on this API
+    reasoning_summary: detailed
+    temperature: null
+    reasoning_effort: xhigh
+    max_tokens: 16384
     timeout_s: 600
     retries: 4
-  gpt-5.5:                                   # relay /v1/responses (allow-listed 2026-09-08); the gpt-5.6 preset with the model id swapped
+  gpt-5.5:
     model: gpt-5.5
     base_url_env: [MODEL_RELAY_BASE_URL]
     api_key_env: [MODEL_RELAY_API_KEY, RELAY_API_KEY]
     api: responses
-    reasoning_summary: detailed              # auto | concise | detailed — OpenAI writes a summary only when the model reasoned enough:
-    temperature: null                        # on a real review, medium (≈26 reasoning tokens) gave none, high (≈40+) gave one (2026-08-27)
-    reasoning_effort: medium                 # probed 2026-09-09 on a 56k-token review: medium 17 s / 975 output tokens, high 59 s / 5.7k,
-                                             # xhigh 41 s / 3.8k, all with the same verdict (gpt-5.6 xhigh: 18 s / 673). medium keeps the
-                                             # review at gpt-5.6-xhigh latency and well under the relay's ~125 s edge cap; --critic-reasoning-effort overrides
-    max_tokens: 16384                        # max_output_tokens covers reasoning + answer on this API
+    reasoning_summary: detailed
+    temperature: null
+    reasoning_effort: medium
+    max_tokens: 16384
     timeout_s: 600
     retries: 4
-  claude-opus-4-8:                           # relay id claude-opus-4-8 (its allow-list; claude-opus-4.8 is rejected)
+  claude-opus-4-8:
     model: claude-opus-4-8
     base_url_env: [MODEL_RELAY_BASE_URL]
     api_key_env: [MODEL_RELAY_API_KEY, RELAY_API_KEY]
-    api: responses                           # verified on the relay 2026-09-04 (replies + function calls)
-    temperature: null                        # the relay's LiteLLM: 'claude-opus-4-8 does not support temperature=0. Only temperature=1' (2026-08-28)
-    # Reasoning (probed 2026-09-08 with unique prompts; the 2026-08-28 "0 reasoning tokens" finding was a relay cache hit):
-    # the relay turns `reasoning.effort` into Bedrock ADAPTIVE thinking for this model — output tokens and latency roughly
-    # double from no effort to xhigh on the same puzzle (3.6k/44 s -> 7.4k/82 s) — but the thinking is NOT surfaced on
-    # the Responses API (no reasoning items, reasoning_tokens=0; it is billed inside output_tokens). `max` is rejected
-    # in practice: the relay's edge times out at ~125 s (HTTP 524). `high` by decision 2026-09-09 (same as the agent
-    # preset, for the claude-as-agent + claude-as-critic test). The six-state probe: medium / high / xhigh returned the
-    # same verdicts (5/6 identical operators, same confidence, notes of 46 / 55 / 61 words) at p50 9 / 12 / 17 s and
-    # max 28 / 30 / 60 s; at xhigh the first tb2.1 arms lost 2-8 % of reviews to the edge cap and delivered notes
-    # 7 turns stale (async). A review that still hits the cap fails open; --critic-reasoning-effort medium|xhigh overrides.
+    api: responses
+    temperature: null
     reasoning_effort: high
-    max_tokens: 16384                        # max_output_tokens covers thinking + the JSON decision, as for gpt-5.6
+    max_tokens: 16384
     timeout_s: 300
     retries: 4
-  claude-opus-5:                             # relay — model id must match the relay's allow-list
+  claude-opus-5:
     model: claude-opus-5
     base_url_env: [MODEL_RELAY_BASE_URL]
     api_key_env: [MODEL_RELAY_API_KEY, RELAY_API_KEY]
@@ -83,45 +71,33 @@ presets:
     max_tokens: 4096
     timeout_s: 300
     retries: 4
-  # Self-hosted critics (2026-08-26 settings): max_input_tokens `auto` = the served window reported by vLLM's
-  # /v1/models (max_model_len — 262144 after the launch-script bump) minus max_tokens; the review transcript is
-  # bounded to fit (plus the engine's 30k-token reserve for the operator prompt/ledger). max_tokens 16384 covers
-  # long thinking + the JSON decision — only the decision's suggestion text reaches the agent's context, the
-  # critic's thinking never does, so the budget costs review latency only.
-  # Self-critic runs (the critic is the agent's own model): the critic SHARES THE AGENT'S SERVING STACK — the same
-  # `<PRESET>_BASE_URL`, no separate critic endpoint (user rule 2026-08-30). A second stack would hide the review's
-  # serving cost and measure a deployment nobody runs; sharing keeps the arm's cost honest and the comparison with the
-  # baseline fair. (Set `<PRESET>_CRITIC_BASE_URL` only for a deliberate second-stack ablation.)
-  qwen38-27b:                                # self-hosted vLLM (router); a critic that costs nothing per review
-    max_input_tokens: auto                   # from /v1/models max_model_len (fallback 150000 when the probe fails)
-    chars_per_token: 2.4                    # dense JSON-escaped code tokenizes at ~2.3-2.6 chars/token
+  qwen38-27b:
+    max_input_tokens: auto
+    chars_per_token: 2.4
     model: Qwen3.8-27B
     base_url_env: [QWEN38_27B_BASE_URL, VLLM_BASE_URL]
     api_key_default: dummy
     token_field: max_tokens
     temperature: 0.0
-    reasoning_effort: medium                 # default medium (user decision 2026-09-05): xhigh reviews thought 2-3x longer for the same
-                                             # verdicts and sat on the agent's clock; --critic-reasoning-effort xhigh restores it
-    reasoning_effort_choices: [medium, xhigh]        # the model tag carries the choice (qwen38-27b-medium / -xhigh); the job id never does
-    # `low` is NOT offered to a critic (user rule 2026-08-30): a barely-reasoning reviewer understates what the operator
-    # critic can do, so an arm that scores low would not be evidence about the method.
-    reasoning_effort_field: chat_template_kwargs     # sent as chat_template_kwargs.reasoning_effort: the vllm-router (0.1.15) 422s a top-level xhigh
-    max_tokens: 16384                        # thinking + the JSON decision (long at xhigh)
+    reasoning_effort: medium
+    reasoning_effort_choices: [medium, xhigh]
+    reasoning_effort_field: chat_template_kwargs
+    max_tokens: 16384
     timeout_s: 600
     retries: 3
   qwen36-27b:
     max_input_tokens: auto
-    chars_per_token: 2.4                    # dense JSON-escaped code tokenizes at ~2.3-2.6 chars/token
+    chars_per_token: 2.4
     model: Qwen3.6-27B
     base_url_env: [QWEN36_27B_BASE_URL, VLLM_BASE_URL]
     api_key_default: dummy
     token_field: max_tokens
     temperature: 0.0
-    reasoning_effort: none                   # not sent: Qwen3.6's template has no effort levels (thinking on by default)
-    max_tokens: 16384                        # was 2048: 134/7897 reviews (1.7%) ran out of budget inside <think> on the 08-26 self-critic run
+    reasoning_effort: none
+    max_tokens: 16384
     timeout_s: 600
     retries: 3
-  qwen35-9b:                                 # self-hosted vLLM; the self-critic partner of the qwen35-9b AGENT preset
+  qwen35-9b:
     max_input_tokens: auto
     chars_per_token: 2.4
     model: Qwen3.5-9B
@@ -129,14 +105,11 @@ presets:
     api_key_default: dummy
     token_field: max_tokens
     temperature: 0.0
-    reasoning_effort: none                   # not sent: Qwen3.5's template has no effort levels (thinking on by default)
-    max_tokens: 16384                        # thinking + the JSON decision, like the other self-hosted critics
+    reasoning_effort: none
+    max_tokens: 16384
     timeout_s: 600
     retries: 3
-  sft-critic:                                # a LOCALLY TRAINED critic checkpoint (src/sft): serve it with
-                                             # --served-model-name sft-critic and export SFT_CRITIC_BASE_URL.
-                                             # Same wire contract as the qwen35-9b critic preset, so the mid-training
-                                             # evaluation (src/sft/pipeline/eval_checkpoint.py) is a normal critic run.
+  sft-critic:                    # a locally trained checkpoint (src/sft), served under the id sft-critic
     max_input_tokens: auto
     chars_per_token: 2.4
     model: sft-critic
@@ -149,53 +122,47 @@ presets:
     max_tokens: 16384
     timeout_s: 600
     retries: 3
-  muse-glimmer-30b:                          # self-hosted vLLM (user-launched); the self-critic partner of the muse-glimmer-30b AGENT preset
-    max_input_tokens: auto                   # from /v1/models max_model_len (131072 on the 2026-09-01 launch) minus max_tokens
+  muse-glimmer-30b:
+    max_input_tokens: auto
     chars_per_token: 2.4
     model: muse-glimmer-30b
-    base_url_env: [MUSE_GLIMMER_30B_BASE_URL, VLLM_BASE_URL]   # shares the agent's stack (user rule 2026-08-30)
+    base_url_env: [MUSE_GLIMMER_30B_BASE_URL, VLLM_BASE_URL]
     api_key_env: [VLLM_API_KEY]
     api_key_default: dummy
     token_field: max_tokens
     temperature: 0.0
-    reasoning_effort: none                   # not sent: always-on thinking, no effort levels (probe 2026-09-01); the thinking
-                                             # comes back in a `reasoning` field, which llm.CriticLLM records like reasoning_content
-    max_tokens: 16384                        # thinking + the JSON decision, like the other self-hosted critics
+    reasoning_effort: none
+    max_tokens: 16384
     timeout_s: 600
     retries: 3
-  deepseek-v4-flash:                         # DeepSeek-V4-Flash-0731 (launch_scripts/vllm/deepseek/deepseek-v4-flash-0731.sh); shares the agent's stack
-    max_input_tokens: auto                   # from /v1/models max_model_len (262144, which INCLUDES the output) minus max_tokens
+  deepseek-v4-flash:
+    max_input_tokens: auto
     chars_per_token: 2.4
     model: DeepSeek-V4-Flash-0731
-    response_format: true                   # strict decision schema; verified on both DSpark endpoints 2026-09-09
-    always_thinking: true                    # user requirement: thinking on for every review AND every retry
+    response_format: true
+    always_thinking: true
     extra_body:
       include_reasoning: true
       chat_template_kwargs: {thinking: true, enable_thinking: true}
     base_url_env: [DEEPSEEK_V4_FLASH_BASE_URL, VLLM_BASE_URL]
     api_key_default: dummy
     token_field: max_tokens
-    temperature: 1.0                        # match this model's generation_config.json; greedy critic decoding looped in reasoning
-    reasoning_effort: max                    # user decision 2026-09-09: max on every review/retry, thinking still enabled
+    temperature: 1.0
+    reasoning_effort: max
     reasoning_effort_choices: [low, high, max]
-    reasoning_effort_field: chat_template_kwargs     # the router's top-level enum stops at `high`; the template reads this key anyway
-    max_tokens: 16384                        # thinking + the JSON decision (user decision 2026-09-09); the thinking returns in `reasoning`
+    reasoning_effort_field: chat_template_kwargs
+    max_tokens: 16384
     timeout_s: 600
     retries: 3
-  ornith15-35b-a3b:                          # self-hosted vLLM (launch_scripts/vllm/ornith/ornith15-35b-a3b.sh); MoE 35B-A3B, Qwen3-style parsers
+  ornith15-35b-a3b:
     model: Ornith-1.5-35b-a3b
     base_url_env: [ORNITH15_35B_A3B_BASE_URL, VLLM_BASE_URL]
     api_key_default: dummy
     token_field: max_tokens
     temperature: 0.0
-    reasoning_effort: none                   # not sent (Qwen3.5-style template: enable_thinking only)
-    # THINKING ON since 2026-08-30 (user decision): the critic reasons before its JSON decision, like the Qwen critics.
-    # History: on the 2026-08-26 DeepSWE runs, late-turn reviews (100k-token transcripts) thought past max_tokens and
-    # returned EMPTY content on 96/100 failing reviews (27% of all, ~37 s each). Two guards keep that from recurring:
-    # the 16384-token reply budget below, and the engine's re-ask WITHOUT thinking whenever a reply comes back empty
-    # (llm.CriticLLM: `last_fallback == "no_think"`, recorded per review as audit.review_fallback).
-    max_tokens: 16384                        # thinking + the JSON decision
-    max_input_tokens: auto                   # from /v1/models max_model_len (262144 after the launch-script bump)
+    reasoning_effort: none
+    max_tokens: 16384
+    max_input_tokens: auto
     chars_per_token: 2.4
     timeout_s: 600
     retries: 3
