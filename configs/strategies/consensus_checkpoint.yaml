@@ -1,9 +1,0 @@
-# Strategy `consensus_checkpoint` — regression detection (arXiv:2603.24631): asks whether the current diff lost something
-# the previous diff checkpoint had; detection only, nothing is restored.
-strategy: consensus_checkpoint
-strategy_options:
-  max_checkpoints: 8                       # diff checkpoints remembered per conversation
-  carrier_operator: diff_scope_review      # operator label the feedback is delivered under
-applicability:
-  intervention_audit: false                # second accept/reject call on every suggestion before delivery
-  dedup_window_turns: 6                    # an identical suggestion is not delivered again within this many turns

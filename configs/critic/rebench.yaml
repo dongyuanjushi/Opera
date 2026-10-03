@@ -1,7 +1,0 @@
-# Critic policy for the legacy SWE-rebench path (src/launch_rebench.py). Schedule, gates and delivery come from the harness
-# pack (src/critics/harnesses/<pack>/policy.yaml) and the strategy file.
-extends: base.yaml
-strategy: operator                         # critic strategy
-endpoint: gpt-5.6                          # default critic model preset; --critic-model overrides
-contract: null                             # no task contract: the bare protocol
-max_turns: 200                             # agent turn budget the critic assumes

@@ -1,8 +1,0 @@
-# Strategy `clarify_gate` — underspecification detector (arXiv:2603.26233): an open task ambiguity is routed to the agent
-# as one direction (there is no user to ask).
-strategy: clarify_gate
-strategy_options:
-  carrier_operator: requirement_contract_review   # operator label the direction is delivered under
-applicability:
-  intervention_audit: false                # second accept/reject call on every suggestion before delivery
-  dedup_window_turns: 6                    # an identical suggestion is not delivered again within this many turns

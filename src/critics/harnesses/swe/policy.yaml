@@ -1,0 +1,16 @@
+# Policy defaults of the swe harness pack; a critic config overrides any key.
+operators: swe_repair     # operator set name (critics.models.OPERATOR_SETS)
+schedule:
+  start_turn: 3           # first turn an ordinary review may run
+  min_gap: 2              # minimum turns between two ordinary reviews
+  interval: 5             # review at least every this many turns
+  repeat_streak: 3        # identical-action streak that triggers a review; <= 0 disables
+  error_streak: 3         # consecutive failed commands that trigger a review; <= 0 disables
+  idle_actions: 6         # work actions (waits excluded) since the last edit that trigger a review; <= 0 disables
+  budget_context: false   # whether the critic is shown the agent's turn budget
+applicability:
+  intervention_audit: true   # run the accept/reject LLM audit on every candidate
+  dedup_window_turns: 6      # turns within which an identical suggestion is not delivered again
+delivery:
+  carrier: default        # note preamble: default | commit | none
+max_turns: 200             # agent turn budget assumed when the request reports none; null = unknown
