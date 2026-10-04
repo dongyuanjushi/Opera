@@ -1,4 +1,4 @@
-<h1 align="center">Opera</h1>
+<h1 align="center">Opera: A Verbal Critic Framework for Long-horizon Coding Agents</h1>
 
 <p align="center">
   <a href="https://arxiv.org/abs/2609.33987"><img src="https://img.shields.io/badge/arXiv-2609.33987-B31B1B?logo=arxiv&logoColor=white" alt="arXiv"></a>
