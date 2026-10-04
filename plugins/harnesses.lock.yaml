@@ -1,0 +1,9 @@
+# Container-side harness packages — the ONE place versions are pinned.
+# The harnesses are installed INSIDE each task container at agent setup (pier/harbor
+# "installed agents"), never into opera's venv; see docs/harness-packaging.md.
+uv: "0.7.13"                 # uv installer version (pier's mini-swe-agent adapter pins the same)
+python: "3.13"               # uv-managed interpreter for mini-swe-agent-style venvs
+python_sdk: "3.12"           # interpreter for the OpenHands SDK venv (openhands-sdk needs >=3.12)
+mini_swe_agent: "2.4.6"      # PyPI mini-swe-agent (pier: `uv tool install mini-swe-agent==<v>`)
+openhands_sdk: "1.34.0"      # PyPI openhands-sdk + openhands-tools (what openhands-ai 1.11.0 resolves to;
+                             # openhands-ai itself is a meta-package with no headless CLI since 1.x)
