@@ -74,7 +74,7 @@ src/sft/               SFT: launch.py, examples/, preprocess/, pipeline/, script
 plugins/benchmarks/    one harbor / pier job per benchmark: task selections, grading, pass@k, resume
 plugins/{terminus2,openhands,mini_sweagent}/   harness subclasses that route the model endpoint through the proxy
 configs/               model presets, per-benchmark critic policies, strategies, the experiment protocol
-experiments/           launchers for every paper experiment
+experiments/           launchers for paper experiments
 vendor/                third-party code: xrlenv, ms-swift
 ```
 
